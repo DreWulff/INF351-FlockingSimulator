@@ -4,3 +4,5 @@
 *.ptx
 *.cubin
 *.fatbin
+flocking_simulator
+.vscode
