@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <time.h>
+#include <bits/stdc++.h>
 
 struct boid
 {
@@ -33,7 +35,7 @@ void DrawBoids()
 {
     for (auto birb: boids)
     {
-        DrawTriangleLines((Vector2){ birb.x-10, birb.y-10 },
+        DrawTriangle((Vector2){birb.x-10, birb.y-10 },
                               (Vector2){ birb.x-10, birb.y+10 },
                               (Vector2){ birb.x+15, birb.y }, DARKBLUE);
     }
@@ -47,12 +49,12 @@ int main(void) {
     InitWindow(screenWidth, screenHeight, "Flocking Simulator");
     SetTargetFPS(60);
     
-    for (int i; i < boidCount; i++)
+    for (int i = 0; i < boidCount; i++)
     {
-        float initX = rand() % screenWidth;
-        float initY = rand() % screenHeight;
-        float initVX = rand() % maxSpeed+ minSpeed;
-        float initVY = rand() % maxSpeed + minSpeed;
+        float initX = rand() % (int) screenWidth;
+        float initY = rand() % (int) screenHeight;
+        float initVX = rand() % (int) (maxSpeed + minSpeed);
+        float initVY = rand() % (int) (maxSpeed + minSpeed);
         boids[i] = boid{.x=initX, .y=initY, .vx=initVX, .vy=initVY};
     }
 
@@ -60,7 +62,6 @@ int main(void) {
         BeginDrawing();
             ClearBackground(RAYWHITE);
             DrawBoids();
-            DrawText("Congrats! You created your first window!", 400, 400, 40, LIGHTGRAY);
         EndDrawing();
     }
 
