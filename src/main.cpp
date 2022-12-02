@@ -35,9 +35,12 @@ void DrawBoids()
 {
     for (auto birb: boids)
     {
-        DrawTriangle((Vector2){birb.x-10, birb.y-10 },
-                              (Vector2){ birb.x-10, birb.y+10 },
-                              (Vector2){ birb.x+15, birb.y }, DARKBLUE);
+        float speed = sqrt((birb.vx * birb.vx) + (birb.vy * birb.vy));
+        float normalX = birb.vx / speed;
+        float normalY = birb.vy / speed;
+        DrawTriangle((Vector2){birb.x-10*normalX, birb.y-10*normalY },
+                              (Vector2){ birb.x-10*normalX, birb.y+10*normalY },
+                              (Vector2){ birb.x+15*normalX, birb.y+normalY }, DARKBLUE);
     }
 }
 
