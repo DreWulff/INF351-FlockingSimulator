@@ -1,8 +1,4 @@
-*.i
-*.ii
-*.gpu
-*.ptx
-*.cubin
-*.fatbin
-flocking_simulator
-.vscode
+raylib-master
+_build
+_bin
+.vs
