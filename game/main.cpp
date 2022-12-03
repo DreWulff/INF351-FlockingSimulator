@@ -29,7 +29,7 @@ const float turnFactor = 0.2;
 const float maxSpeed = 6;
 const float minSpeed = 3;
 const float visualRange = 40;
-const float protectedRange = 8;
+const float protectedRange = 100;
 const float maxBias = 0.01;
 const float biasIncrement = 0.00004;
 const float biasVal = 0.001;
@@ -47,6 +47,24 @@ void UpdateBoids()
 
     for (size_t i = 0; i < boidCount; i++)
     {
+        // Añadir separación
+        float close_dx = 0.0;
+        float close_dy = 0.0;
+
+        for (size_t j = 0; j < boidCount; j++) {
+            if (i != j) {
+                float dx = boids[i].x - boids[j].x;
+                float dy = boids[i].y - boids[j].y;
+                float distance = sqrt(dx * dx + dy * dy);
+                if (distance < protectedRange) {
+                    close_dx += dx;
+                    close_dy += dy;
+                }
+            }
+        }
+        aux[i].vx += close_dx * avoidFactor;
+        aux[i].vy += close_dy * avoidFactor;
+
         // Añadir giro a velocidad
         if (boids[i].y < screenMargin) {
             aux[i].vy += turnFactor;
