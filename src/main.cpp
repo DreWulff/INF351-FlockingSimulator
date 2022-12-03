@@ -51,16 +51,110 @@ const float protectedRange = 8;
 const float maxBias = 0.01;
 const float biasIncrement = 0.00004;
 const float biasVal = 0.001;
+const int leftMargin = 150;
+const int rightMargin = 1450;
+const int upperMargin = 750;
+const int lowerMargin = 150;
 
 boid boids[boidCount];
 
+point Turning (boid birb)
+{
+    float vx;
+    float vy;
+    if (birb.x < leftMargin)    {vx = turnFactor;}
+    if (birb.x > rightMargin)   {vx = -turnFactor;}
+    if (birb.y < lowerMargin)   {vy = turnFactor;}
+    if (birb.y < upperMargin)   {vy = -turnFactor;}
+    return ( point {.x=vx, .y=vy} );
+}
+
+point Separation (boid birb)
+{
+    float vx = 0;
+    float vy = 0;
+    for (auto other: boids)
+    {
+        float distance = sqrt((other.x - birb.x)*(other.x - birb.x) + (other.y - birb.y)*(other.y - birb.y));
+        if (distance < protectedRange)
+        {
+            vx = vx + (birb.x - other.x);
+            vy = vy + (birb.y - other.y);
+        }
+    }
+    return ( point {.x=vx*avoidFactor, .y=vy*avoidFactor} );
+}
+
+point Alignment (boid birb)
+{
+    float vx_avg = 0;
+    float vy_avg = 0;
+    float neighbours = 0;
+    for (auto other: boids)
+    {
+        float distance = sqrt((other.x - birb.x)*(other.x - birb.x) + (other.y - birb.y)*(other.y - birb.y));
+        if (distance < visualRange)
+        {
+            vx_avg += other.vx;
+            vy_avg += other.vy;
+            neighbours += 1;
+        }
+    }
+    vx_avg = vx_avg / neighbours;
+    vy_avg = vy_avg / neighbours;
+    return ( point{.x=vx_avg*matchingFactor, .y=vy_avg*matchingFactor} );
+}
+
+point Cohesion (boid birb)
+{
+    float x_avg = 0;
+    float y_avg = 0;
+    float neighbours = 0;
+    for (auto other: boids)
+    {
+        float distance = sqrt((other.x - birb.x)*(other.x - birb.x) + (other.y - birb.y)*(other.y - birb.y));
+        if (distance < visualRange)
+        {
+            x_avg += other.x;
+            y_avg += other.y;
+            neighbours += 1;
+        }
+    }
+    x_avg = x_avg / neighbours;
+    y_avg = y_avg / neighbours;
+    return ( point{.x=x_avg*centeringFactor, .y=y_avg*centeringFactor} );
+}
+
 void UpdateBoids()
 {
-    for (auto& birb: boids)
+    boid newBirbs[boidCount] = boids;
+    for (int i = 0; i < boidCount; i++)
     {
-        birb.x += birb.vx;
-        birb.y += birb.vy;
+        boid birb = boids[i];
+        point turn  = Turning(birb);
+        point avoid = Separation(birb);
+        point align = Alignment(birb);
+        point cohes = Cohesion(birb);
+
+        float vx = birb.vx + turn.x + avoid.x + align.x + cohes.x;
+        float vy = birb.vy + turn.y + avoid.y + align.y + cohes.y;
+        float speed = sqrt((vx*vx) + (vy*vy));
+        if (speed > maxSpeed)
+        {
+            vx = (vx/speed) * maxSpeed;
+            vy = (vy/speed) * maxSpeed;
+        }
+        if (speed < minSpeed)
+        {
+            vx = (vx/speed) * minSpeed;
+            vy = (vy/speed) * minSpeed;
+        }
+        newBirbs[i].x += vx;
+        newBirbs[i].y += vy;
+        newBirbs[i].vx = vx;
+        newBirbs[i].vy = vy;
     }
+    boids = newBirbs;
 }
 
 void DrawBoids()
