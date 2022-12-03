@@ -26,17 +26,14 @@ const float avoidFactor = 0.05;
 const float matchingFactor = 0.05;
 const float centeringFactor = 0.0005;
 const float turnFactor = 0.2;
-const float maxSpeed = 3;
-const float minSpeed = 1;
+const float maxSpeed = 6;
+const float minSpeed = 3;
 const float visualRange = 40;
 const float protectedRange = 8;
 const float maxBias = 0.01;
 const float biasIncrement = 0.00004;
 const float biasVal = 0.001;
-const int leftMargin = 150;
-const int rightMargin = 1450;
-const int upperMargin = 750;
-const int lowerMargin = 150;
+const int screenMargin = 150;
 const int pi = 3.14159265358979323846;
 
 // Globales
@@ -48,11 +45,45 @@ void UpdateBoids()
 {
     std::copy(std::begin(boids), std::end(boids), aux);
 
-    for (auto& birb: aux)
-	{
-		birb.x += birb.vx;
-		birb.y += birb.vy;
-	}
+    for (size_t i = 0; i < boidCount; i++)
+    {
+        // Añadir giro a velocidad
+        if (boids[i].y < screenMargin) {
+            aux[i].vy += turnFactor;
+        }
+        if (boids[i].y > screenHeight - screenMargin) {
+            aux[i].vy += -turnFactor;
+        }
+        if (boids[i].x < screenMargin) {
+            aux[i].vx += turnFactor;
+        }
+        if (boids[i].x > screenWidth - screenMargin) {
+            aux[i].vx += -turnFactor;
+        }
+
+        // Restringir velocidad
+        float angle = atan(aux[i].vy / aux[i].vx);
+        if (aux[i].vx > 0.0 && aux[i].vy > 0.0) angle = angle;
+        else if (aux[i].vx < 0.0 && aux[i].vy > 0.0) angle += pi;
+        else if (aux[i].vx < 0.0 && aux[i].vy < 0.0) angle += pi;
+        else if (aux[i].vx > 0.0 && aux[i].vy < 0.0) angle += 2 * pi;
+        float speed = sqrt(aux[i].vx * aux[i].vx + aux[i].vy * aux[i].vy);
+        if (speed > maxSpeed)
+        {
+            aux[i].vx = maxSpeed * cos(angle);
+            aux[i].vy = maxSpeed * sin(angle);
+        }
+        if (speed < minSpeed)
+        {
+            aux[i].vx = minSpeed * cos(angle);
+            aux[i].vy = minSpeed * sin(angle);
+        }
+
+        // Añadir velocidad a posición
+        aux[i].x += aux[i].vx;
+        aux[i].y += aux[i].vy;
+
+    }
 
     std::copy(std::begin(aux), std::end(aux), boids);
 }
@@ -96,8 +127,8 @@ void DrawBoids()
 // Función main
 int main ()
 {
-	// Inicializar boids
-	for (int i = 0; i < boidCount; i++)
+    // Inicializar boids
+    for (int i = 0; i < boidCount; i++)
     {
         float initX = rand() % (int) screenWidth;
         float initY = rand() % (int) screenHeight;
@@ -110,26 +141,23 @@ int main ()
         boids[i] = boid{.x=initX, .y=initY, .vx=initVX, .vy=initVY};
     }
 
-	// Interfaz grafica
-    const int screenWidth = 1600;
-    const int screenHeight = 900;
-
+    // Crear ventana
     InitWindow(screenWidth, screenHeight, "Flocking Simulator");
     SetTargetFPS(60);
 
-	// Main loop
-	while (!WindowShouldClose())
-	{
-		// Update
-		UpdateBoids();
+    // Main loop
+    while (!WindowShouldClose())
+    {
+        // Update
+        UpdateBoids();
 
-		// Draw
-		BeginDrawing();
-		ClearBackground(WHITE);
-		DrawBoids();
-		EndDrawing();
-	}
+        // Draw
+        BeginDrawing();
+        ClearBackground(WHITE);
+        DrawBoids();
+        EndDrawing();
+    }
 
-	CloseWindow();
-	return 0;
+    CloseWindow();
+    return 0;
 }
