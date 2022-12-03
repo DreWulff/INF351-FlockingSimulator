@@ -9,8 +9,8 @@ struct boid
 {
     float x;
     float y;
-    float v;
-    float vDirection;
+    float vx;
+    float vy;
 };
 
 struct point {
@@ -58,8 +58,8 @@ void UpdateBoids()
 {
     for (auto& birb: boids)
     {
-        birb.x += birb.v * cos(birb.vDirection);
-        birb.y += birb.v * sin(birb.vDirection);
+        birb.x += birb.vx;
+        birb.y += birb.vy;
     }
 }
 
@@ -67,9 +67,15 @@ void DrawBoids()
 {
     for (auto birb: boids)
     {
-        point p1 = rotate_point(birb.x, birb.y, birb.vDirection, point{.x=birb.x - 10, .y=birb.y - 10});
-        point p2 = rotate_point(birb.x, birb.y, birb.vDirection, point{.x=birb.x - 10, .y=birb.y + 10});
-        point p3 = rotate_point(birb.x, birb.y, birb.vDirection, point{.x=birb.x + 20, .y=birb.y});
+        float angle = atan(birb.vy / birb.vx);
+        if (birb.vx > 0.0 && birb.vy > 0.0) angle = angle;
+        if (birb.vx < 0.0 && birb.vy > 0.0) angle += M_PI;
+        if (birb.vx < 0.0 && birb.vy < 0.0) angle += M_PI;
+        if (birb.vx > 0.0 && birb.vy < 0.0) angle += 2 * M_PI; 
+
+        point p1 = rotate_point(birb.x, birb.y, angle, point{.x=birb.x - 10, .y=birb.y - 10});
+        point p2 = rotate_point(birb.x, birb.y, angle, point{.x=birb.x - 10, .y=birb.y + 10});
+        point p3 = rotate_point(birb.x, birb.y, angle, point{.x=birb.x + 20, .y=birb.y});
         DrawTriangle((Vector2){p1.x, p1.y}, (Vector2){p2.x, p2.y}, (Vector2){p3.x, p3.y}, DARKBLUE);
     }
 }
@@ -87,10 +93,12 @@ int main(void) {
         float initX = rand() % (int) screenWidth;
         float initY = rand() % (int) screenHeight;
         
-        float angle = 2 * M_PI * ((float)(rand() % 360) / 360);
+        float angle = rand() % 360;
         float magnitude = (rand() % (int) (maxSpeed - minSpeed)) + minSpeed;
         
-        boids[i] = boid{.x=initX, .y=initY, .v=magnitude, .vDirection=angle};
+        float initVX = cos((2 * M_PI) * (angle / 360)) * magnitude;
+        float initVY = sin((2 * M_PI) * (angle / 360)) * magnitude;
+        boids[i] = boid{.x=initX, .y=initY, .vx=initVX, .vy=initVY};
     }
 
     while (!WindowShouldClose()) {
