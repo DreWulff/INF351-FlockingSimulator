@@ -12,7 +12,8 @@ struct boid
     float vy;
 };
 
-struct point {
+struct vector2
+{
     float x;
     float y;
 };
@@ -40,9 +41,23 @@ const int pi = 3.14159265358979323846;
 
 // Globales
 boid boids[boidCount];
+boid aux[boidCount];
 
 // Funciones
-point RotatePoint(float cx, float cy, float angle, point point)
+void UpdateBoids()
+{
+    std::copy(std::begin(boids), std::end(boids), aux);
+
+    for (auto& birb: aux)
+	{
+		birb.x += birb.vx;
+		birb.y += birb.vy;
+	}
+
+    std::copy(std::begin(aux), std::end(aux), boids);
+}
+
+vector2 RotatePoint(float cx, float cy, float angle, vector2 point)
 {
     float s = sin(angle);
     float c = cos(angle);
@@ -61,15 +76,6 @@ point RotatePoint(float cx, float cy, float angle, point point)
     return point;
 }
 
-void UpdateBoids()
-{
-	for (auto& birb: boids)
-	{
-		birb.x += birb.vx;
-		birb.y += birb.vy;
-	}
-}
-
 void DrawBoids()
 {
     for (auto birb: boids)
@@ -80,9 +86,9 @@ void DrawBoids()
         if (birb.vx < 0.0 && birb.vy < 0.0) angle += pi;
         if (birb.vx > 0.0 && birb.vy < 0.0) angle += 2 * pi;
 
-        point p1 = RotatePoint(birb.x, birb.y, angle, point{.x=birb.x - 10, .y=birb.y - 10});
-        point p2 = RotatePoint(birb.x, birb.y, angle, point{.x=birb.x - 10, .y=birb.y + 10});
-        point p3 = RotatePoint(birb.x, birb.y, angle, point{.x=birb.x + 20, .y=birb.y});
+        vector2 p1 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - 10, .y=birb.y - 10});
+        vector2 p2 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - 10, .y=birb.y + 10});
+        vector2 p3 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x + 20, .y=birb.y});
         DrawTriangle((Vector2){p1.x, p1.y}, (Vector2){p2.x, p2.y}, (Vector2){p3.x, p3.y}, DARKBLUE);
     }
 }
