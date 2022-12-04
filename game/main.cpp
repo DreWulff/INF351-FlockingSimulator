@@ -29,7 +29,7 @@ const float turnFactor = 0.2;
 const float maxSpeed = 6;
 const float minSpeed = 3;
 const float visualRange = 40;
-const float protectedRange = 100;
+const float protectedRange = 10;
 const float maxBias = 0.01;
 const float biasIncrement = 0.00004;
 const float biasVal = 0.001;
@@ -47,23 +47,45 @@ void UpdateBoids()
 
     for (size_t i = 0; i < boidCount; i++)
     {
-        // Añadir separación
-        float close_dx = 0.0;
-        float close_dy = 0.0;
+        // Inicializar variables auxiliares
+        float dxOfCloseBoids = 0.0;
+        float dyOfCloseBoids = 0.0;
+        float vxAverage = 0.0;
+        float vyAverage = 0.0;
+        float neighborCount = 0.0;
 
         for (size_t j = 0; j < boidCount; j++) {
             if (i != j) {
                 float dx = boids[i].x - boids[j].x;
                 float dy = boids[i].y - boids[j].y;
                 float distance = sqrt(dx * dx + dy * dy);
+
+                // Calcular separación
                 if (distance < protectedRange) {
-                    close_dx += dx;
-                    close_dy += dy;
+                    dxOfCloseBoids += dx;
+                    dyOfCloseBoids += dy;
+                }
+
+                // Calcular alineación
+                else if (distance < visualRange) {
+                    vxAverage += boids[j].vx;
+                    vyAverage += boids[j].vy;
+                    neighborCount += 1;
                 }
             }
         }
-        aux[i].vx += close_dx * avoidFactor;
-        aux[i].vy += close_dy * avoidFactor;
+
+        // Añadir separación
+        aux[i].vx += dxOfCloseBoids * avoidFactor;
+        aux[i].vy += dyOfCloseBoids * avoidFactor;
+
+        // Añadir alineación
+        if (neighborCount > 0) {
+            vxAverage /= neighborCount;
+            vyAverage /= neighborCount;
+            aux[i].vx += (vxAverage - boids[i].vx) * matchingFactor;
+            aux[i].vy += (vyAverage - boids[i].vy) * matchingFactor;
+        }
 
         // Añadir giro a velocidad
         if (boids[i].y < screenMargin) {
@@ -122,7 +144,7 @@ vector2 RotatePoint(float cx, float cy, float angle, vector2 point)
     // translate point back:
     point.x = xnew + cx;
     point.y = ynew + cy;
-    return point;
+    return ( point );
 }
 
 void DrawBoids()
