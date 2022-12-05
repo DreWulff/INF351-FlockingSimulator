@@ -70,11 +70,11 @@ void UpdateBoids()
                 }
 
                 else if (distance < visualRange) {
-                    // Calcular alineación
+                    // Calcular velocidad promedio de boids en el rango visual
                     averageVx += boids[j].vx;
                     averageVy += boids[j].vy;
 
-                    // Calcular centro de masa
+                    // Calcular posición promedio de boids en el rango visual
                     averageX += boids[j].x;
                     averageY += boids[j].y;
 
