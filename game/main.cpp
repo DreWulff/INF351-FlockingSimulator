@@ -19,21 +19,22 @@ struct vector2
 };
 
 // Constantes
-const int boidCount = 100;
 const int screenWidth = 1600;
 const int screenHeight = 900;
+
+const int boidSize = 6;
+const int boidCount = 1000;
+
 const float avoidFactor = 0.05;
 const float matchingFactor = 0.05;
-const float centeringFactor = 0.0005;
+const float centeringFactor = 0.005;
 const float turnFactor = 0.2;
-const float maxSpeed = 6;
-const float minSpeed = 3;
-const float visualRange = 40;
+const float maxSpeed = 4;
+const float minSpeed = 2;
+const float visualRange = 30;
 const float protectedRange = 10;
-const float maxBias = 0.01;
-const float biasIncrement = 0.00004;
-const float biasVal = 0.001;
-const int screenMargin = 150;
+const int screenMargin = 400;
+
 const int pi = 3.14159265358979323846;
 
 // Globales
@@ -50,8 +51,10 @@ void UpdateBoids()
         // Inicializar variables auxiliares
         float dxOfCloseBoids = 0.0;
         float dyOfCloseBoids = 0.0;
-        float vxAverage = 0.0;
-        float vyAverage = 0.0;
+        float averageVx = 0.0;
+        float averageVy = 0.0;
+        float averageX = 0.0;
+        float averageY = 0.0;
         float neighborCount = 0.0;
 
         for (size_t j = 0; j < boidCount; j++) {
@@ -60,16 +63,22 @@ void UpdateBoids()
                 float dy = boids[i].y - boids[j].y;
                 float distance = sqrt(dx * dx + dy * dy);
 
-                // Calcular separación
                 if (distance < protectedRange) {
+                    // Calcular separación
                     dxOfCloseBoids += dx;
                     dyOfCloseBoids += dy;
                 }
 
-                // Calcular alineación
                 else if (distance < visualRange) {
-                    vxAverage += boids[j].vx;
-                    vyAverage += boids[j].vy;
+                    // Calcular alineación
+                    averageVx += boids[j].vx;
+                    averageVy += boids[j].vy;
+
+                    // Calcular centro de masa
+                    averageX += boids[j].x;
+                    averageY += boids[j].y;
+
+                    // Calcular cantidad de vecinos
                     neighborCount += 1;
                 }
             }
@@ -79,12 +88,18 @@ void UpdateBoids()
         aux[i].vx += dxOfCloseBoids * avoidFactor;
         aux[i].vy += dyOfCloseBoids * avoidFactor;
 
-        // Añadir alineación
         if (neighborCount > 0) {
-            vxAverage /= neighborCount;
-            vyAverage /= neighborCount;
-            aux[i].vx += (vxAverage - boids[i].vx) * matchingFactor;
-            aux[i].vy += (vyAverage - boids[i].vy) * matchingFactor;
+            // Añadir alineación
+            averageVx /= neighborCount;
+            averageVy /= neighborCount;
+            aux[i].vx += (averageVx - boids[i].vx) * matchingFactor;
+            aux[i].vy += (averageVy - boids[i].vy) * matchingFactor;
+
+            // Añadir cohesión
+            averageX /= neighborCount;
+            averageY /= neighborCount;
+            aux[i].vx += (averageX - boids[i].x) * centeringFactor;
+            aux[i].vy += (averageY - boids[i].y) * centeringFactor;
         }
 
         // Añadir giro a velocidad
@@ -102,21 +117,14 @@ void UpdateBoids()
         }
 
         // Restringir velocidad
-        float angle = atan(aux[i].vy / aux[i].vx);
-        if (aux[i].vx > 0.0 && aux[i].vy > 0.0) angle = angle;
-        else if (aux[i].vx < 0.0 && aux[i].vy > 0.0) angle += pi;
-        else if (aux[i].vx < 0.0 && aux[i].vy < 0.0) angle += pi;
-        else if (aux[i].vx > 0.0 && aux[i].vy < 0.0) angle += 2 * pi;
         float speed = sqrt(aux[i].vx * aux[i].vx + aux[i].vy * aux[i].vy);
-        if (speed > maxSpeed)
-        {
-            aux[i].vx = maxSpeed * cos(angle);
-            aux[i].vy = maxSpeed * sin(angle);
+        if (speed < minSpeed) {
+            aux[i].vx = (aux[i].vx / speed) * minSpeed;
+            aux[i].vy = (aux[i].vy / speed) * minSpeed;
         }
-        if (speed < minSpeed)
-        {
-            aux[i].vx = minSpeed * cos(angle);
-            aux[i].vy = minSpeed * sin(angle);
+        else {
+            aux[i].vx = (aux[i].vx / speed) * maxSpeed;
+            aux[i].vy = (aux[i].vy / speed) * maxSpeed;
         }
 
         // Añadir velocidad a posición
@@ -157,12 +165,14 @@ void DrawBoids()
         if (birb.vx < 0.0 && birb.vy < 0.0) angle += pi;
         if (birb.vx > 0.0 && birb.vy < 0.0) angle += 2 * pi;
 
-        vector2 p1 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - 10, .y=birb.y - 10});
-        vector2 p2 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - 10, .y=birb.y + 10});
-        vector2 p3 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x + 20, .y=birb.y});
+        vector2 p1 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - boidSize, .y=birb.y - boidSize});
+        vector2 p2 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - boidSize, .y=birb.y + boidSize});
+        vector2 p3 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x + 2 * boidSize, .y=birb.y});
         DrawTriangle((Vector2){p1.x, p1.y}, (Vector2){p2.x, p2.y}, (Vector2){p3.x, p3.y}, DARKBLUE);
     }
 }
+
+#include <iostream>
 
 // Función main
 int main ()
