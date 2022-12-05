@@ -172,8 +172,6 @@ void DrawBoids()
     }
 }
 
-#include <iostream>
-
 // Función main
 int main ()
 {
