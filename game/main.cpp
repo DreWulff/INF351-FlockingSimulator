@@ -1,5 +1,7 @@
 #include <math.h>
 #include <random>
+#include <time.h>
+#include <iostream>
 
 #include "raylib.h"
 
@@ -16,6 +18,13 @@ struct vector2
 {
     float x;
     float y;
+};
+
+struct triangle
+{
+    vector2 p1;
+    vector2 p2;
+    vector2 p3;
 };
 
 // Constantes
@@ -40,6 +49,7 @@ const int pi = 3.14159265358979323846;
 // Globales
 boid boids[boidCount];
 boid aux[boidCount];
+triangle simulation[900][boidCount];
 
 // Funciones
 void UpdateBoids()
@@ -155,20 +165,28 @@ vector2 RotatePoint(float cx, float cy, float angle, vector2 point)
     return ( point );
 }
 
-void DrawBoids()
+void DrawBoids(int iteration)
 {
-    for (auto birb: boids)
+    for (auto birb: simulation[iteration])
     {
-        float angle = atan(birb.vy / birb.vx);
-        if (birb.vx > 0.0 && birb.vy > 0.0) angle = angle;
-        if (birb.vx < 0.0 && birb.vy > 0.0) angle += pi;
-        if (birb.vx < 0.0 && birb.vy < 0.0) angle += pi;
-        if (birb.vx > 0.0 && birb.vy < 0.0) angle += 2 * pi;
+        DrawTriangle((Vector2){birb.p1.x, birb.p1.y}, (Vector2){birb.p2.x, birb.p2.y}, (Vector2){birb.p3.x, birb.p3.y}, DARKBLUE);
+    }
+}
 
-        vector2 p1 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - boidSize, .y=birb.y - boidSize});
-        vector2 p2 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x - boidSize, .y=birb.y + boidSize});
-        vector2 p3 = RotatePoint(birb.x, birb.y, angle, vector2{.x=birb.x + 2 * boidSize, .y=birb.y});
-        DrawTriangle((Vector2){p1.x, p1.y}, (Vector2){p2.x, p2.y}, (Vector2){p3.x, p3.y}, DARKBLUE);
+void RegisterBoids(int iteration)
+{
+    for (int i = 0; i < boidCount; i++)
+    {
+        float angle = atan(boids[i].vy / boids[i].vx);
+        if (boids[i].vx > 0.0 && boids[i].vy > 0.0) angle = angle;
+        if (boids[i].vx < 0.0 && boids[i].vy > 0.0) angle += pi;
+        if (boids[i].vx < 0.0 && boids[i].vy < 0.0) angle += pi;
+        if (boids[i].vx > 0.0 && boids[i].vy < 0.0) angle += 2 * pi;
+
+        vector2 p1 = RotatePoint(boids[i].x, boids[i].y, angle, vector2{.x=boids[i].x - boidSize, .y=boids[i].y - boidSize});
+        vector2 p2 = RotatePoint(boids[i].x, boids[i].y, angle, vector2{.x=boids[i].x - boidSize, .y=boids[i].y + boidSize});
+        vector2 p3 = RotatePoint(boids[i].x, boids[i].y, angle, vector2{.x=boids[i].x + 2 * boidSize, .y=boids[i].y});
+        simulation[iteration][i] = triangle{.p1=p1, .p2=p2, .p3=p3};
     }
 }
 
@@ -189,20 +207,29 @@ int main ()
         boids[i] = boid{.x=initX, .y=initY, .vx=initVX, .vy=initVY};
     }
 
+    // Simulation
+    clock_t t1, t2;
+	t1 = clock();
+    for (int i = 0; i < 900; i++)
+    {
+        UpdateBoids();
+        RegisterBoids(i);
+    }
+    t2 = clock();
+	double ms = 1000.0 * (double)(t2-t1)/CLOCKS_PER_SEC;
+	std::cout << "Tiempo CPU: " << ms << "[ms]" << std::endl;
+
     // Crear ventana
     InitWindow(screenWidth, screenHeight, "Flocking Simulator");
     SetTargetFPS(60);
 
-    // Main loop
-    while (!WindowShouldClose())
+    // Result drawing
+    for (int i = 0; i < 900; i++)
     {
-        // Update
-        UpdateBoids();
-
         // Draw
         BeginDrawing();
         ClearBackground(WHITE);
-        DrawBoids();
+        DrawBoids(i);
         EndDrawing();
     }
 
