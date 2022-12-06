@@ -7,7 +7,7 @@ Luego, para  compilar correr en la carpeta del proyecto:
 make
 ```
 
-Luego para correr el programa:
+Y después para correr el programa:
 ```
 ./flocking_simulator [archivo_de_output]
 ```
