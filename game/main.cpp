@@ -20,132 +20,42 @@ struct vector2
     float y;
 };
 
-struct triangle
-{
-    vector2 p1;
-    vector2 p2;
-    vector2 p3;
-};
-
 // Constantes
 const int screenWidth = 1600;
 const int screenHeight = 900;
 
 const int boidSize = 6;
-const int boidCount = 1000;
-
-const float avoidFactor = 0.05;
-const float matchingFactor = 0.05;
-const float centeringFactor = 0.005;
-const float turnFactor = 0.2;
-const float maxSpeed = 4;
-const float minSpeed = 2;
-const float visualRange = 30;
-const float protectedRange = 10;
-const int screenMargin = 400;
 
 const int pi = 3.14159265358979323846;
 
-// Globales
-boid boids[boidCount];
-boid aux[boidCount];
-triangle simulation[900][boidCount];
+// Funcion de lectura de output
+void read_file(const char *filename, int* iterations, int* boidCount, boid** boids) {    
+	FILE *fp = fopen(filename, "r");
+	// Leer M, N, P
+	fscanf(fp, "%d %d", iterations, boidCount);
+    float aux_x;
+    float aux_y;
+    float aux_vx;
+    float aux_vy;
+    fscanf(fp, "\n");
 
-// Funciones
-void UpdateBoids()
-{
-    std::copy(std::begin(boids), std::end(boids), aux);
-
-    for (size_t i = 0; i < boidCount; i++)
+	// Leer boids
+    *boids = (boid*) malloc(sizeof(struct boid) * (*iterations) * (*boidCount));
+    for (int frame = 0; frame < (*iterations); frame++)
     {
-        // Inicializar variables auxiliares
-        float dxOfCloseBoids = 0.0;
-        float dyOfCloseBoids = 0.0;
-        float averageVx = 0.0;
-        float averageVy = 0.0;
-        float averageX = 0.0;
-        float averageY = 0.0;
-        float neighborCount = 0.0;
-
-        for (size_t j = 0; j < boidCount; j++) {
-            if (i != j) {
-                float dx = boids[i].x - boids[j].x;
-                float dy = boids[i].y - boids[j].y;
-                float distance = sqrt(dx * dx + dy * dy);
-
-                if (distance < protectedRange) {
-                    // Calcular separación
-                    dxOfCloseBoids += dx;
-                    dyOfCloseBoids += dy;
-                }
-
-                else if (distance < visualRange) {
-                    // Calcular velocidad promedio de boids en el rango visual
-                    averageVx += boids[j].vx;
-                    averageVy += boids[j].vy;
-
-                    // Calcular posición promedio de boids en el rango visual
-                    averageX += boids[j].x;
-                    averageY += boids[j].y;
-
-                    // Calcular cantidad de vecinos
-                    neighborCount += 1;
-                }
-            }
+        for (int birb = 0; birb < (*boidCount); birb++)
+        {
+            fscanf(fp, "%f ", &aux_x);
+            fscanf(fp, "%f ", &aux_y);
+            fscanf(fp, "%f ", &aux_vx);
+            fscanf(fp, "%f ", &aux_vy);
+            (*boids)[frame * (*boidCount) + birb] = boid{.x=aux_x, .y=aux_y, .vx=aux_vx, .vy=aux_vy};
         }
-
-        // Añadir separación
-        aux[i].vx += dxOfCloseBoids * avoidFactor;
-        aux[i].vy += dyOfCloseBoids * avoidFactor;
-
-        if (neighborCount > 0) {
-            // Añadir alineación
-            averageVx /= neighborCount;
-            averageVy /= neighborCount;
-            aux[i].vx += (averageVx - boids[i].vx) * matchingFactor;
-            aux[i].vy += (averageVy - boids[i].vy) * matchingFactor;
-
-            // Añadir cohesión
-            averageX /= neighborCount;
-            averageY /= neighborCount;
-            aux[i].vx += (averageX - boids[i].x) * centeringFactor;
-            aux[i].vy += (averageY - boids[i].y) * centeringFactor;
-        }
-
-        // Añadir giro a velocidad
-        if (boids[i].y < screenMargin) {
-            aux[i].vy += turnFactor;
-        }
-        if (boids[i].y > screenHeight - screenMargin) {
-            aux[i].vy += -turnFactor;
-        }
-        if (boids[i].x < screenMargin) {
-            aux[i].vx += turnFactor;
-        }
-        if (boids[i].x > screenWidth - screenMargin) {
-            aux[i].vx += -turnFactor;
-        }
-
-        // Restringir velocidad
-        float speed = sqrt(aux[i].vx * aux[i].vx + aux[i].vy * aux[i].vy);
-        if (speed < minSpeed) {
-            aux[i].vx = (aux[i].vx / speed) * minSpeed;
-            aux[i].vy = (aux[i].vy / speed) * minSpeed;
-        }
-        else {
-            aux[i].vx = (aux[i].vx / speed) * maxSpeed;
-            aux[i].vy = (aux[i].vy / speed) * maxSpeed;
-        }
-
-        // Añadir velocidad a posición
-        aux[i].x += aux[i].vx;
-        aux[i].y += aux[i].vy;
-
-    }
-
-    std::copy(std::begin(aux), std::end(aux), boids);
+        fscanf(fp, "\n");
+	}
 }
 
+// Funcion de rotacion de puntos para dibujo de triangulos
 vector2 RotatePoint(float cx, float cy, float angle, vector2 point)
 {
     float s = sin(angle);
@@ -165,71 +75,45 @@ vector2 RotatePoint(float cx, float cy, float angle, vector2 point)
     return ( point );
 }
 
-void DrawBoids(int iteration)
-{
-    for (auto birb: simulation[iteration])
-    {
-        DrawTriangle((Vector2){birb.p1.x, birb.p1.y}, (Vector2){birb.p2.x, birb.p2.y}, (Vector2){birb.p3.x, birb.p3.y}, DARKBLUE);
-    }
-}
-
-void RegisterBoids(int iteration)
+// Funcion de dibujo
+void DrawBoids(int iteration, boid *boids, int boidCount)
 {
     for (int i = 0; i < boidCount; i++)
     {
-        float angle = atan(boids[i].vy / boids[i].vx);
-        if (boids[i].vx > 0.0 && boids[i].vy > 0.0) angle = angle;
-        if (boids[i].vx < 0.0 && boids[i].vy > 0.0) angle += pi;
-        if (boids[i].vx < 0.0 && boids[i].vy < 0.0) angle += pi;
-        if (boids[i].vx > 0.0 && boids[i].vy < 0.0) angle += 2 * pi;
+        float angle = atan(boids[iteration * boidCount + i].vy / boids[iteration * boidCount + i].vx);
+        if (boids[iteration * boidCount + i].vx > 0.0 && boids[iteration * boidCount + i].vy > 0.0) angle = angle;
+        if (boids[iteration * boidCount + i].vx < 0.0 && boids[iteration * boidCount + i].vy > 0.0) angle += pi;
+        if (boids[iteration * boidCount + i].vx < 0.0 && boids[iteration * boidCount + i].vy < 0.0) angle += pi;
+        if (boids[iteration * boidCount + i].vx > 0.0 && boids[iteration * boidCount + i].vy < 0.0) angle += 2 * pi;
 
-        vector2 p1 = RotatePoint(boids[i].x, boids[i].y, angle, vector2{.x=boids[i].x - boidSize, .y=boids[i].y - boidSize});
-        vector2 p2 = RotatePoint(boids[i].x, boids[i].y, angle, vector2{.x=boids[i].x - boidSize, .y=boids[i].y + boidSize});
-        vector2 p3 = RotatePoint(boids[i].x, boids[i].y, angle, vector2{.x=boids[i].x + 2 * boidSize, .y=boids[i].y});
-        simulation[iteration][i] = triangle{.p1=p1, .p2=p2, .p3=p3};
+        vector2 p1 = RotatePoint(boids[iteration * boidCount + i].x, boids[iteration * boidCount + i].y, angle, vector2{.x=boids[iteration * boidCount + i].x - boidSize, .y=boids[iteration * boidCount + i].y - boidSize});
+        vector2 p2 = RotatePoint(boids[iteration * boidCount + i].x, boids[iteration * boidCount + i].y, angle, vector2{.x=boids[iteration * boidCount + i].x - boidSize, .y=boids[iteration * boidCount + i].y + boidSize});
+        vector2 p3 = RotatePoint(boids[iteration * boidCount + i].x, boids[iteration * boidCount + i].y, angle, vector2{.x=boids[iteration * boidCount + i].x + 2 * boidSize, .y=boids[iteration * boidCount + i].y});
+        DrawTriangle((Vector2){p1.x, p1.y}, (Vector2){p2.x, p2.y}, (Vector2){p3.x, p3.y}, DARKBLUE);
     }
 }
+
 
 // Función main
 int main ()
 {
-    // Inicializar boids
-    for (int i = 0; i < boidCount; i++)
-    {
-        float initX = rand() % (int) screenWidth;
-        float initY = rand() % (int) screenHeight;
-
-        float angle = rand() % 360;
-        float magnitude = (rand() % (int) (maxSpeed - minSpeed)) + minSpeed;
-
-        float initVX = cos((2 * pi) * (angle / 360)) * magnitude;
-        float initVY = sin((2 * pi) * (angle / 360)) * magnitude;
-        boids[i] = boid{.x=initX, .y=initY, .vx=initVX, .vy=initVY};
-    }
-
-    // Simulation
-    clock_t t1, t2;
-	t1 = clock();
-    for (int i = 0; i < 900; i++)
-    {
-        UpdateBoids();
-        RegisterBoids(i);
-    }
-    t2 = clock();
-	double ms = 1000.0 * (double)(t2-t1)/CLOCKS_PER_SEC;
-	std::cout << "Tiempo CPU: " << ms << "[ms]" << std::endl;
+    // Lectura de output
+    int boidCount;
+    int iterations;
+    boid *boids;
+    read_file("output_CPU.txt", &iterations, &boidCount, &boids);
 
     // Crear ventana
     InitWindow(screenWidth, screenHeight, "Flocking Simulator");
     SetTargetFPS(60);
 
     // Result drawing
-    for (int i = 0; i < 900; i++)
+    for (int i = 0; i < iterations; i++)
     {
         // Draw
         BeginDrawing();
         ClearBackground(WHITE);
-        DrawBoids(i);
+        DrawBoids(i, boids, boidCount);
         EndDrawing();
     }
 
