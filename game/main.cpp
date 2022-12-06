@@ -23,13 +23,11 @@ struct vector2
 // Constantes
 const int screenWidth = 1600;
 const int screenHeight = 900;
-
 const int boidSize = 6;
-
 const int pi = 3.14159265358979323846;
 
 // Funcion de lectura de output
-void read_file(const char *filename, int* iterations, int* boidCount, boid** boids) {    
+void read_file(const char *filename, int* iterations, int* boidCount, boid** boids) {
 	FILE *fp = fopen(filename, "r");
 	// Leer M, N, P
 	fscanf(fp, "%d %d", iterations, boidCount);
@@ -95,25 +93,26 @@ void DrawBoids(int iteration, boid *boids, int boidCount)
 
 
 // Función main
-int main ()
+int main (int argc, char *argv[])
 {
     // Lectura de output
+    std::cout << "Reading file...\n";
     int boidCount;
     int iterations;
     boid *boids;
-    read_file("output_CPU.txt", &iterations, &boidCount, &boids);
+    read_file(argv[1], &iterations, &boidCount, &boids);
 
     // Crear ventana
     InitWindow(screenWidth, screenHeight, "Flocking Simulator");
     SetTargetFPS(60);
 
-    // Result drawing
-    for (int i = 0; i < iterations; i++)
+    // Dibujar
+    for (int i = 0; i < iterations && !WindowShouldClose(); i++)
     {
         // Draw
         BeginDrawing();
         ClearBackground(WHITE);
-        DrawBoids(i, boids, boidCount);
+            DrawBoids(i, boids, boidCount);
         EndDrawing();
     }
 
