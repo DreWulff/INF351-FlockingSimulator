@@ -9,5 +9,9 @@ make
 
 Y después para correr el programa:
 ```
-./flocking_simulator [archivo_de_output]
+./flocking_simulator [archivo_de_output (generado en colab)]
+```
+O:
+```
+./real_time_flocking_simulator
 ```
